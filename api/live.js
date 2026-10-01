@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -12,7 +12,6 @@ export default async function handler(req, res) {
     const response = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
       headers: { "x-apisports-key": key }
     });
-
     const data = await response.json();
 
     if (!response.ok) {
@@ -32,4 +31,4 @@ export default async function handler(req, res) {
       message: error instanceof Error ? error.message : String(error)
     });
   }
-}
+};
