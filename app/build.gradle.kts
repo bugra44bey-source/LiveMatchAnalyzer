@@ -3,10 +3,10 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 android {
-    namespace="com.bugra.livematchanalyzer"
+    namespace="com.bugra44bey.livematchanalyzer"
     compileSdk=35
     defaultConfig {
-        applicationId="com.bugra.livematchanalyzer"
+        applicationId="com.bugra44bey.livematchanalyzer"
         minSdk=24
         targetSdk=35
         versionCode=1
