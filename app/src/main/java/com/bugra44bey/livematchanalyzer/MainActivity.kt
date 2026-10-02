@@ -1,6 +1,8 @@
 package com.bugra44bey.livematchanalyzer
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -12,6 +14,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
+    private val handler = Handler(Looper.getMainLooper())
+    private var analysisTicker: Runnable? = null
     private val apiBase = "https://livematchanalyzer.vercel.app"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,9 +83,22 @@ class MainActivity : AppCompatActivity() {
                 button.text = "$home $hg - $ag $away${if (minute.isNotEmpty()) "  (${minute}') " else ""}"
                 button.setOnClickListener {
                     result.text = "$home - $away analiz ediliyor..."
+                    analysisTicker?.let { handler.removeCallbacks(it) }
                     Thread {
                         val analysis = getJson("$apiBase/api/analyze?fixture=$id")
-                        runOnUiThread { result.text = formatAnalysis(analysis, hg, ag, minute, status?.optString("short", "") ?: "", halftime?.optInt("home", -1) ?: -1, halftime?.optInt("away", -1) ?: -1) }
+                        runOnUiThread {
+                            var liveMinute = minute.toIntOrNull() ?: 0
+                            result.text = formatAnalysis(analysis, home, away, hg, ag, liveMinute.toString(), halftime?.optInt("home", -1) ?: -1, halftime?.optInt("away", -1) ?: -1)
+                            val ticker = object : Runnable {
+                                override fun run() {
+                                    if (liveMinute < 120) liveMinute += 1
+                                    result.text = formatAnalysis(analysis, home, away, hg, ag, liveMinute.toString(), halftime?.optInt("home", -1) ?: -1, halftime?.optInt("away", -1) ?: -1)
+                                    handler.postDelayed(this, 60000)
+                                }
+                            }
+                            analysisTicker = ticker
+                            handler.postDelayed(ticker, 60000)
+                        }
                     }.start()
                 }
                 liveList.addView(button)
@@ -117,26 +134,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun formatAnalysis(body: String, currentHome: Int, currentAway: Int, minuteText: String, statusShort: String, halftimeHome: Int, halftimeAway: Int): String {
+    private fun formatAnalysis(body: String, homeName: String, awayName: String, currentHome: Int, currentAway: Int, minuteText: String, halftimeHome: Int, halftimeAway: Int): String {
         return try {
             val root = JSONObject(body)
             if (root.has("error")) return "Hata: ${root.optString("error")}"
             val predictions = root.optJSONArray("prediction")
-            val out = StringBuilder("MAÇ ANALİZİ\n\n")
-            if (predictions != null && predictions.length() > 0) {
-                val p = predictions.optJSONObject(0)
-                val pred = p?.optJSONObject("predictions")
-                val goals = pred?.optJSONObject("goals")
-                val advice = pred?.optString("advice", "") ?: ""
-                val underOver = pred?.optString("under_over", "") ?: ""
-                out.append("Tahmin: ${pred?.optString("winner", "—")}\n")
-                out.append("Gol tahmini: ${goals?.optString("home", "—")} - ${goals?.optString("away", "—")}\n")
-                out.append("Alt/Üst: $underOver\n")
-                if (advice.isNotEmpty()) out.append("Öneri: $advice\n")
-            } else {
-                out.append("Bu maç için API-Football tahmini bulunamadı.\n")
-            }
+            val out = StringBuilder()
             val elapsed = minuteText.toIntOrNull()?.coerceIn(0, 120) ?: 0
+            out.append("⚽ " + homeName + "\n")
+            out.append("      " + currentHome + " - " + currentAway + "\n")
+            out.append("⚽ " + awayName + "\n")
+            out.append("⏱ " + elapsed + "'\n\n")
             val totalGoals = currentHome + currentAway
 
             var expectedTotal = 2.4
@@ -188,7 +196,6 @@ class MainActivity : AppCompatActivity() {
                 (1.0 - Math.exp(-firstHalfExpected * 0.55)).coerceIn(0.0, 1.0) * 100.0
             }
 
-            out.append("\nHESAPLANAN OLASILIKLAR\n")
             val minExpectedGoals = kotlin.math.floor(expectedFinalGoals).toInt().coerceAtLeast(totalGoals)
             val maxExpectedGoals = kotlin.math.ceil(expectedFinalGoals + 0.6).toInt().coerceAtLeast(minExpectedGoals)
             val homeMinGoals = kotlin.math.floor(expectedHomeFinal).toInt().coerceAtLeast(currentHome)
@@ -225,7 +232,7 @@ class MainActivity : AppCompatActivity() {
                 out.append("İY 1.5 Üst: İlk yarı tamamlandı\n")
                 out.append("İY KG Var: İlk yarı tamamlandı\n")
             }
-            out.append("\nBu yüzdeler API tahmini + canlı skor/süre üzerinden hesaplanan tahmini değerlerdir; garanti değildir.")
+            out.append("\nBu yüzdeler istatistiksel tahminlerdir; garanti değildir.")
             out.toString()
         } catch (e: Exception) {
             "Analiz verisi okunamadı: ${e.message}"
