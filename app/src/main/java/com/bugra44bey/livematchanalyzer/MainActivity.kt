@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showFixtureList(body: String, liveList: LinearLayout, result: TextView, isLive: Boolean) {
         try {
-            val root = JSONObject(body)
+            val root = if (body.isBlank()) JSONObject() else JSONObject(body)
             if (root.has("error")) {
                 result.text = "Hata: ${root.optString("error")}"
                 return
@@ -101,12 +101,12 @@ class MainActivity : AppCompatActivity() {
                         val analysis = getJson("$apiBase/api/analyze?fixture=$id")
                         runOnUiThread {
                             var liveMinute = minute.toIntOrNull() ?: 0
-                            result.text = formatAnalysis(analysis, home, away, hg, ag, liveMinute.toString(), halftime?.optInt("home", -1) ?: -1, halftime?.optInt("away", -1) ?: -1)
+                            result.text = formatAnalysis(if (analysis.isBlank()) "{}" else analysis, home, away, hg, ag, liveMinute.toString(), halftime?.optInt("home", -1) ?: -1, halftime?.optInt("away", -1) ?: -1)
                             if (isLive) {
                                 val ticker = object : Runnable {
                                     override fun run() {
                                         if (liveMinute < 120) liveMinute += 1
-                                        result.text = formatAnalysis(analysis, home, away, hg, ag, liveMinute.toString(), halftime?.optInt("home", -1) ?: -1, halftime?.optInt("away", -1) ?: -1)
+                                        result.text = formatAnalysis(if (analysis.isBlank()) "{}" else analysis, home, away, hg, ag, liveMinute.toString(), halftime?.optInt("home", -1) ?: -1, halftime?.optInt("away", -1) ?: -1)
                                         handler.postDelayed(this, 60000)
                                     }
                                 }
@@ -151,8 +151,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun formatAnalysis(body: String, homeName: String, awayName: String, currentHome: Int, currentAway: Int, minuteText: String, halftimeHome: Int, halftimeAway: Int): String {
         return try {
-            val root = JSONObject(body)
-            if (root.has("error")) return "Hata: ${root.optString("error")}"
+            val root = if (body.isBlank()) JSONObject() else JSONObject(body)
             val predictions = root.optJSONArray("prediction")
             val out = StringBuilder()
             val elapsed = minuteText.toIntOrNull()?.coerceIn(0, 120) ?: 0
