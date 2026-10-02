@@ -23,7 +23,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val liveMatches = findViewById<Button>(R.id.liveMatches)
+        val todayMatches = findViewById<Button>(R.id.todayMatches)
         val liveList = findViewById<LinearLayout>(R.id.liveList)
+        val todayList = findViewById<LinearLayout>(R.id.todayList)
         val result = findViewById<TextView>(R.id.result)
 
         liveMatches.setOnClickListener {
@@ -31,12 +33,21 @@ class MainActivity : AppCompatActivity() {
             liveList.removeAllViews()
             Thread {
                 val text = getJson("$apiBase/api/live")
-                runOnUiThread { showLiveMatches(text, liveList, result) }
+                runOnUiThread { showFixtureList(text, liveList, result, true) }
+            }.start()
+        }
+
+        todayMatches.setOnClickListener {
+            result.text = "Bugünün maçları yükleniyor..."
+            todayList.removeAllViews()
+            Thread {
+                val text = getJson("$apiBase/api/live?mode=today")
+                runOnUiThread { showFixtureList(text, todayList, result, false) }
             }.start()
         }
     }
 
-    private fun showLiveMatches(body: String, liveList: LinearLayout, result: TextView) {
+    private fun showFixtureList(body: String, liveList: LinearLayout, result: TextView, isLive: Boolean) {
         try {
             val root = JSONObject(body)
             if (root.has("error")) {
@@ -49,8 +60,8 @@ class MainActivity : AppCompatActivity() {
                 return
             }
 
-            result.text = "Canlı maçlar: ${fixtures.length()}  •  Analiz için maça dokun"
-            val count = minOf(fixtures.length(), 30)
+            result.text = if (isLive) "Canlı maçlar: ${fixtures.length()}  •  Analiz için maça dokun" else "Bugünün maçları: ${fixtures.length()}  •  Analiz için maça dokun"
+            val count = minOf(fixtures.length(), 100)
 
             for (i in 0 until count) {
                 val f = fixtures.optJSONObject(i) ?: continue
@@ -68,6 +79,8 @@ class MainActivity : AppCompatActivity() {
                 val hg = goals?.optInt("home", 0) ?: 0
                 val ag = goals?.optInt("away", 0) ?: 0
                 val minute = status?.optString("elapsed", "") ?: ""
+                val kickoff = fixture?.optString("date", "") ?: ""
+                val kickoffText = if (kickoff.length >= 16) kickoff.substring(11, 16) else ""
 
                 val button = Button(this)
                 button.isAllCaps = false
@@ -80,7 +93,7 @@ class MainActivity : AppCompatActivity() {
                 val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
                 params.setMargins(0, 0, 0, 10)
                 button.layoutParams = params
-                button.text = "$home $hg - $ag $away${if (minute.isNotEmpty()) "  (${minute}') " else ""}"
+                button.text = if (isLive) home + " " + hg + " - " + ag + " " + away + (if (minute.isNotEmpty()) "  (" + minute + "') " else "") else kickoffText + "  •  " + home + " - " + away
                 button.setOnClickListener {
                     result.text = "$home - $away analiz ediliyor..."
                     analysisTicker?.let { handler.removeCallbacks(it) }
@@ -89,15 +102,17 @@ class MainActivity : AppCompatActivity() {
                         runOnUiThread {
                             var liveMinute = minute.toIntOrNull() ?: 0
                             result.text = formatAnalysis(analysis, home, away, hg, ag, liveMinute.toString(), halftime?.optInt("home", -1) ?: -1, halftime?.optInt("away", -1) ?: -1)
-                            val ticker = object : Runnable {
-                                override fun run() {
-                                    if (liveMinute < 120) liveMinute += 1
-                                    result.text = formatAnalysis(analysis, home, away, hg, ag, liveMinute.toString(), halftime?.optInt("home", -1) ?: -1, halftime?.optInt("away", -1) ?: -1)
-                                    handler.postDelayed(this, 60000)
+                            if (isLive) {
+                                val ticker = object : Runnable {
+                                    override fun run() {
+                                        if (liveMinute < 120) liveMinute += 1
+                                        result.text = formatAnalysis(analysis, home, away, hg, ag, liveMinute.toString(), halftime?.optInt("home", -1) ?: -1, halftime?.optInt("away", -1) ?: -1)
+                                        handler.postDelayed(this, 60000)
+                                    }
                                 }
+                                analysisTicker = ticker
+                                handler.postDelayed(ticker, 60000)
                             }
-                            analysisTicker = ticker
-                            handler.postDelayed(ticker, 60000)
                         }
                     }.start()
                 }
