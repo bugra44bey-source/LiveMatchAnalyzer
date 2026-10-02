@@ -195,9 +195,19 @@ class MainActivity : AppCompatActivity() {
             val homeMaxGoals = kotlin.math.ceil(expectedHomeFinal + 0.4).toInt().coerceAtLeast(homeMinGoals)
             val awayMinGoals = kotlin.math.floor(expectedAwayFinal).toInt().coerceAtLeast(currentAway)
             val awayMaxGoals = kotlin.math.ceil(expectedAwayFinal + 0.4).toInt().coerceAtLeast(awayMinGoals)
+
+            val homeScore1 = if (currentHome >= 1) 100.0 else poissonAtLeast((expectedHomeFinal - currentHome).coerceAtLeast(0.05), 1) * 100.0
+            val homeScore2 = if (currentHome >= 2) 100.0 else poissonAtLeast((expectedHomeFinal - currentHome).coerceAtLeast(0.05), 2 - currentHome) * 100.0
+            val homeScore3 = if (currentHome >= 3) 100.0 else poissonAtLeast((expectedHomeFinal - currentHome).coerceAtLeast(0.05), 3 - currentHome) * 100.0
+            val awayScore1 = if (currentAway >= 1) 100.0 else poissonAtLeast((expectedAwayFinal - currentAway).coerceAtLeast(0.05), 1) * 100.0
+            val awayScore2 = if (currentAway >= 2) 100.0 else poissonAtLeast((expectedAwayFinal - currentAway).coerceAtLeast(0.05), 2 - currentAway) * 100.0
+            val awayScore3 = if (currentAway >= 3) 100.0 else poissonAtLeast((expectedAwayFinal - currentAway).coerceAtLeast(0.05), 3 - currentAway) * 100.0
+
             out.append("Tahmini maç sonu gol: " + minExpectedGoals + "–" + maxExpectedGoals + " gol\n")
             out.append("Ev sahibi tahmini: " + homeMinGoals + "–" + homeMaxGoals + " gol\n")
+            out.append("Ev sahibi gol olasılığı: 1+ " + String.format("%.0f", homeScore1) + "% | 2+ " + String.format("%.0f", homeScore2) + "% | 3+ " + String.format("%.0f", homeScore3) + "%\n")
             out.append("Deplasman tahmini: " + awayMinGoals + "–" + awayMaxGoals + " gol\n")
+            out.append("Deplasman gol olasılığı: 1+ " + String.format("%.0f", awayScore1) + "% | 2+ " + String.format("%.0f", awayScore2) + "% | 3+ " + String.format("%.0f", awayScore3) + "%\n")
             out.append("2.5 Üst: " + String.format("%.0f", over25.coerceIn(0.0, 100.0)) + "%\n")
             out.append("3.5 Üst: " + String.format("%.0f", over35.coerceIn(0.0, 100.0)) + "%\n")
             out.append("4.5 Üst: " + String.format("%.0f", over45.coerceIn(0.0, 100.0)) + "%\n")
