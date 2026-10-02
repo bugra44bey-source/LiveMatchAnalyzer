@@ -32,13 +32,15 @@ module.exports = async function handler(req, res) {
     if (!response.ok) {
       return res.status(response.status).json({
         error: "API-Football request failed",
+        apiStatus: response.status,
         details: data
       });
     }
 
     return res.status(200).json({
       results: data.results ?? 0,
-      fixtures: data.response ?? []
+      fixtures: data.response ?? [],
+      apiErrors: data.errors ?? {}
     });
   } catch (error) {
     return res.status(500).json({
