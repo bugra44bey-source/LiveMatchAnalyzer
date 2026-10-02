@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -64,6 +66,16 @@ class MainActivity : AppCompatActivity() {
                 val minute = status?.optString("elapsed", "") ?: ""
 
                 val button = Button(this)
+                button.isAllCaps = false
+                button.textSize = 15f
+                button.setPadding(18, 8, 18, 8)
+                val bg = GradientDrawable()
+                bg.setColor(Color.rgb(245, 247, 250))
+                bg.cornerRadius = 24f
+                button.background = bg
+                val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                params.setMargins(0, 0, 0, 10)
+                button.layoutParams = params
                 button.text = "$home $hg - $ag $away${if (minute.isNotEmpty()) "  (${minute}') " else ""}"
                 button.setOnClickListener {
                     result.text = "$home - $away analiz ediliyor..."
