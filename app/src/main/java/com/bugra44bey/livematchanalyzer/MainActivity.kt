@@ -51,6 +51,8 @@ class MainActivity : AppCompatActivity() {
                 val fixture = f.optJSONObject("fixture")
                 val teams = f.optJSONObject("teams")
                 val goals = f.optJSONObject("goals")
+                val score = f.optJSONObject("score")
+                val halftime = score?.optJSONObject("halftime")
                 val status = fixture?.optJSONObject("status")
                 val id = fixture?.optInt("id", 0) ?: 0
                 if (id == 0) continue
@@ -67,7 +69,7 @@ class MainActivity : AppCompatActivity() {
                     result.text = "$home - $away analiz ediliyor..."
                     Thread {
                         val analysis = getJson("$apiBase/api/analyze?fixture=$id")
-                        runOnUiThread { result.text = formatAnalysis(analysis, hg, ag, minute, status?.optString("short", "") ?: "") }
+                        runOnUiThread { result.text = formatAnalysis(analysis, hg, ag, minute, status?.optString("short", "") ?: "", halftime?.optInt("home", -1) ?: -1, halftime?.optInt("away", -1) ?: -1) }
                     }.start()
                 }
                 liveList.addView(button)
@@ -103,7 +105,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun formatAnalysis(body: String, currentHome: Int, currentAway: Int, minuteText: String, statusShort: String): String {
+    private fun formatAnalysis(body: String, currentHome: Int, currentAway: Int, minuteText: String, statusShort: String, halftimeHome: Int, halftimeAway: Int): String {
         return try {
             val root = JSONObject(body)
             if (root.has("error")) return "Hata: ${root.optString("error")}"
@@ -145,10 +147,12 @@ class MainActivity : AppCompatActivity() {
             else (1.0 - Math.exp(-remainingExpected * 0.55)).coerceIn(0.0, 1.0) * 100.0
 
             val firstHalfExpected = (expectedTotal * 0.50).coerceIn(0.05, 3.5)
-            val firstHalfTotal = currentHome + currentAway
+            val firstHalfTotal = if (elapsed > 45 && halftimeHome >= 0 && halftimeAway >= 0) halftimeHome + halftimeAway else currentHome + currentAway
             val firstHalfOver15 = if (firstHalfTotal >= 2) 100.0
             else poissonAtLeast(firstHalfExpected, 2 - firstHalfTotal) * 100.0
-            val firstHalfBtts = if (currentHome > 0 && currentAway > 0 && elapsed <= 45) 100.0
+            val firstHalfBtts = if (elapsed > 45 && halftimeHome >= 0 && halftimeAway >= 0) {
+                if (halftimeHome > 0 && halftimeAway > 0) 100.0 else 0.0
+            } else if (currentHome > 0 && currentAway > 0 && elapsed <= 45) 100.0
             else if (elapsed > 45) {
                 if (currentHome > 0 && currentAway > 0) 100.0 else 0.0
             } else {
