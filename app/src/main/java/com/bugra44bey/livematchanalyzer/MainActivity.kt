@@ -140,6 +140,8 @@ class MainActivity : AppCompatActivity() {
             val totalGoals = currentHome + currentAway
 
             var expectedTotal = 2.4
+            var expectedHomeFinal = 1.2
+            var expectedAwayFinal = 1.2
             if (predictions != null && predictions.length() > 0) {
                 val p = predictions.optJSONObject(0)
                 val pred = p?.optJSONObject("predictions")
@@ -147,9 +149,15 @@ class MainActivity : AppCompatActivity() {
                 val eh = pg?.optString("home", "")?.toDoubleOrNull()
                 val ea = pg?.optString("away", "")?.toDoubleOrNull()
                 if (eh != null && ea != null && eh + ea > 0.1) {
+                    expectedHomeFinal = eh.coerceIn(0.0, 5.0)
+                    expectedAwayFinal = ea.coerceIn(0.0, 5.0)
                     expectedTotal = (eh + ea).coerceIn(0.2, 6.0)
                 }
             }
+
+            // Canlı skor tahmin edilen takım gollerini aşmışsa, mevcut skor minimum kabul edilir.
+            expectedHomeFinal = maxOf(expectedHomeFinal, currentHome.toDouble())
+            expectedAwayFinal = maxOf(expectedAwayFinal, currentAway.toDouble())
 
             val remainingShare = ((90 - elapsed).coerceIn(0, 90) / 90.0)
             val remainingExpected = (expectedTotal * remainingShare).coerceAtLeast(0.05)
@@ -183,7 +191,13 @@ class MainActivity : AppCompatActivity() {
             out.append("\nHESAPLANAN OLASILIKLAR\n")
             val minExpectedGoals = kotlin.math.floor(expectedFinalGoals).toInt().coerceAtLeast(totalGoals)
             val maxExpectedGoals = kotlin.math.ceil(expectedFinalGoals + 0.6).toInt().coerceAtLeast(minExpectedGoals)
+            val homeMinGoals = kotlin.math.floor(expectedHomeFinal).toInt().coerceAtLeast(currentHome)
+            val homeMaxGoals = kotlin.math.ceil(expectedHomeFinal + 0.4).toInt().coerceAtLeast(homeMinGoals)
+            val awayMinGoals = kotlin.math.floor(expectedAwayFinal).toInt().coerceAtLeast(currentAway)
+            val awayMaxGoals = kotlin.math.ceil(expectedAwayFinal + 0.4).toInt().coerceAtLeast(awayMinGoals)
             out.append("Tahmini maç sonu gol: " + minExpectedGoals + "–" + maxExpectedGoals + " gol\n")
+            out.append("Ev sahibi tahmini: " + homeMinGoals + "–" + homeMaxGoals + " gol\n")
+            out.append("Deplasman tahmini: " + awayMinGoals + "–" + awayMaxGoals + " gol\n")
             out.append("2.5 Üst: " + String.format("%.0f", over25.coerceIn(0.0, 100.0)) + "%\n")
             out.append("3.5 Üst: " + String.format("%.0f", over35.coerceIn(0.0, 100.0)) + "%\n")
             out.append("4.5 Üst: " + String.format("%.0f", over45.coerceIn(0.0, 100.0)) + "%\n")
