@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
                     result.text = "$home - $away analiz ediliyor..."
                     Thread {
                         val analysis = getJson("$apiBase/api/analyze?fixture=$id")
-                        runOnUiThread { result.text = formatAnalysis(analysis) }
+                        runOnUiThread { result.text = formatAnalysis(analysis, hg, ag, minute, status?.optString("short", "") ?: "") }
                     }.start()
                 }
                 liveList.addView(button)
@@ -75,6 +75,17 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             result.text = "Canlı maç verisi okunamadı: ${e.message}"
         }
+    }
+
+    private fun poissonAtLeast(lambda: Double, k: Int): Double {
+        if (k <= 0) return 1.0
+        var cdf = 0.0
+        var term = Math.exp(-lambda)
+        for (i in 0 until k) {
+            if (i > 0) term *= lambda / i
+            cdf += term
+        }
+        return (1.0 - cdf).coerceIn(0.0, 1.0)
     }
 
     private fun getJson(urlString: String): String {
@@ -92,7 +103,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun formatAnalysis(body: String): String {
+    private fun formatAnalysis(body: String, currentHome: Int, currentAway: Int, minuteText: String, statusShort: String): String {
         return try {
             val root = JSONObject(body)
             if (root.has("error")) return "Hata: ${root.optString("error")}"
@@ -111,7 +122,50 @@ class MainActivity : AppCompatActivity() {
             } else {
                 out.append("Bu maç için API-Football tahmini bulunamadı.\n")
             }
-            out.append("\nNot: KG Var ve 2.5 Üst değerlendirmesi canlı istatistiklerle ayrıca geliştirilecek.")
+            val elapsed = minuteText.toIntOrNull()?.coerceIn(0, 120) ?: 0
+            val totalGoals = currentHome + currentAway
+
+            var expectedTotal = 2.4
+            if (predictions != null && predictions.length() > 0) {
+                val p = predictions.optJSONObject(0)
+                val pred = p?.optJSONObject("predictions")
+                val pg = pred?.optJSONObject("goals")
+                val eh = pg?.optString("home", "")?.toDoubleOrNull()
+                val ea = pg?.optString("away", "")?.toDoubleOrNull()
+                if (eh != null && ea != null && eh + ea > 0.1) {
+                    expectedTotal = (eh + ea).coerceIn(0.2, 6.0)
+                }
+            }
+
+            val remainingShare = ((90 - elapsed).coerceIn(0, 90) / 90.0)
+            val remainingExpected = (expectedTotal * remainingShare).coerceAtLeast(0.05)
+            val over25 = if (totalGoals >= 3) 100.0
+            else poissonAtLeast(remainingExpected, 3 - totalGoals) * 100.0
+            val btts = if (currentHome > 0 && currentAway > 0) 100.0
+            else (1.0 - Math.exp(-remainingExpected * 0.55)).coerceIn(0.0, 1.0) * 100.0
+
+            val firstHalfExpected = (expectedTotal * 0.50).coerceIn(0.05, 3.5)
+            val firstHalfTotal = currentHome + currentAway
+            val firstHalfOver15 = if (firstHalfTotal >= 2) 100.0
+            else poissonAtLeast(firstHalfExpected, 2 - firstHalfTotal) * 100.0
+            val firstHalfBtts = if (currentHome > 0 && currentAway > 0 && elapsed <= 45) 100.0
+            else if (elapsed > 45) {
+                if (currentHome > 0 && currentAway > 0) 100.0 else 0.0
+            } else {
+                (1.0 - Math.exp(-firstHalfExpected * 0.55)).coerceIn(0.0, 1.0) * 100.0
+            }
+
+            out.append("\nHESAPLANAN OLASILIKLAR\n")
+            out.append("KG Var: " + String.format("%.0f", btts.coerceIn(0.0, 100.0)) + "%\n")
+            out.append("2.5 Üst: " + String.format("%.0f", over25.coerceIn(0.0, 100.0)) + "%\n")
+            if (elapsed <= 45) {
+                out.append("İY 1.5 Üst: " + String.format("%.0f", firstHalfOver15.coerceIn(0.0, 100.0)) + "%\n")
+                out.append("İY KG Var: " + String.format("%.0f", firstHalfBtts.coerceIn(0.0, 100.0)) + "%\n")
+            } else {
+                out.append("İY 1.5 Üst: İlk yarı tamamlandı\n")
+                out.append("İY KG Var: İlk yarı tamamlandı\n")
+            }
+            out.append("\nBu yüzdeler API tahmini + canlı skor/süre üzerinden hesaplanan tahmini değerlerdir; garanti değildir.")
             out.toString()
         } catch (e: Exception) {
             "Analiz verisi okunamadı: ${e.message}"
