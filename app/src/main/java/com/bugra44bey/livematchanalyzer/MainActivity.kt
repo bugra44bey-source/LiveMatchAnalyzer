@@ -167,6 +167,8 @@ class MainActivity : AppCompatActivity() {
 
             val firstHalfExpected = (expectedTotal * 0.50).coerceIn(0.05, 3.5)
             val firstHalfTotal = if (elapsed > 45 && halftimeHome >= 0 && halftimeAway >= 0) halftimeHome + halftimeAway else currentHome + currentAway
+            val firstHalfOver05 = if (firstHalfTotal >= 1) 100.0
+            else poissonAtLeast(firstHalfExpected, 1) * 100.0
             val firstHalfOver15 = if (firstHalfTotal >= 2) 100.0
             else poissonAtLeast(firstHalfExpected, 2 - firstHalfTotal) * 100.0
             val firstHalfBtts = if (elapsed > 45 && halftimeHome >= 0 && halftimeAway >= 0) {
@@ -186,6 +188,7 @@ class MainActivity : AppCompatActivity() {
             out.append("5.5 Üst: " + String.format("%.0f", over55.coerceIn(0.0, 100.0)) + "%\n")
             out.append("KG Var: " + String.format("%.0f", btts.coerceIn(0.0, 100.0)) + "%\n")
             if (elapsed <= 45) {
+                out.append("İY 0.5 Üst: " + String.format("%.0f", firstHalfOver05.coerceIn(0.0, 100.0)) + "%\n")
                 out.append("İY 1.5 Üst: " + String.format("%.0f", firstHalfOver15.coerceIn(0.0, 100.0)) + "%\n")
                 out.append("İY KG Var: " + String.format("%.0f", firstHalfBtts.coerceIn(0.0, 100.0)) + "%\n")
             } else {
