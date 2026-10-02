@@ -181,7 +181,9 @@ class MainActivity : AppCompatActivity() {
             }
 
             out.append("\nHESAPLANAN OLASILIKLAR\n")
-            out.append("Tahmini toplam gol: " + String.format("%.1f", expectedFinalGoals) + "\n")
+            val minExpectedGoals = kotlin.math.floor(expectedFinalGoals).toInt().coerceAtLeast(totalGoals)
+            val maxExpectedGoals = kotlin.math.ceil(expectedFinalGoals + 0.6).toInt().coerceAtLeast(minExpectedGoals)
+            out.append("Tahmini maç sonu gol: " + minExpectedGoals + "–" + maxExpectedGoals + " gol\n")
             out.append("2.5 Üst: " + String.format("%.0f", over25.coerceIn(0.0, 100.0)) + "%\n")
             out.append("3.5 Üst: " + String.format("%.0f", over35.coerceIn(0.0, 100.0)) + "%\n")
             out.append("4.5 Üst: " + String.format("%.0f", over45.coerceIn(0.0, 100.0)) + "%\n")
