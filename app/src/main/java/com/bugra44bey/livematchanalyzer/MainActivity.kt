@@ -51,12 +51,24 @@ class MainActivity : AppCompatActivity() {
         try {
             val root = if (body.isBlank()) JSONObject() else JSONObject(body)
             if (root.has("error")) {
-                result.text = "Hata: ${root.optString("error")}"
+                val details = root.optJSONObject("details")
+                val apiErrors = details?.optJSONObject("errors")
+                val detailText = if (apiErrors != null && apiErrors.length() > 0) {
+                    apiErrors.toString()
+                } else {
+                    details?.toString() ?: root.optString("error")
+                }
+                result.text = "HATA: " + root.optString("error") + "\nAPI: " + detailText
                 return
             }
             val fixtures = root.optJSONArray("fixtures")
             if (fixtures == null || fixtures.length() == 0) {
-                result.text = "Şu anda canlı maç bulunamadı."
+                val apiErrors = root.optJSONObject("apiErrors")
+                result.text = if (apiErrors != null && apiErrors.length() > 0) {
+                    "API-Football cevap verdi ama hata döndürdü:\n" + apiErrors.toString()
+                } else {
+                    "API-Football cevap verdi ama bu sorguda maç bulunamadı."
+                }
                 return
             }
 
