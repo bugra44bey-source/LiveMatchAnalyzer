@@ -10,9 +10,15 @@ module.exports = async function handler(req, res) {
 
   try {
     const mode = req.query?.mode || "live";
-    const today = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Europe/Istanbul"
-    }).format(new Date());
+    const dateParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Europe/Istanbul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(new Date());
+
+    const dateValues = Object.fromEntries(dateParts.map(part => [part.type, part.value]));
+    const today = dateValues.year + "-" + dateValues.month + "-" + dateValues.day;
 
     const endpoint = mode === "today"
       ? `https://v3.football.api-sports.io/fixtures?date=${today}&timezone=Europe%2FIstanbul`
