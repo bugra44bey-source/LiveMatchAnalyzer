@@ -10,8 +10,12 @@ module.exports = async function handler(req, res) {
 
   try {
     const mode = req.query?.mode || "live";
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Istanbul"
+    }).format(new Date());
+
     const endpoint = mode === "today"
-      ? "https://v3.football.api-sports.io/fixtures?date=2026-10-02&timezone=Europe%2FIstanbul"
+      ? `https://v3.football.api-sports.io/fixtures?date=${today}&timezone=Europe%2FIstanbul`
       : "https://v3.football.api-sports.io/fixtures?live=all";
 
     const response = await fetch(endpoint, {
