@@ -155,6 +155,13 @@ class MainActivity : AppCompatActivity() {
             val remainingExpected = (expectedTotal * remainingShare).coerceAtLeast(0.05)
             val over25 = if (totalGoals >= 3) 100.0
             else poissonAtLeast(remainingExpected, 3 - totalGoals) * 100.0
+            val over35 = if (totalGoals >= 4) 100.0
+            else poissonAtLeast(remainingExpected, 4 - totalGoals) * 100.0
+            val over45 = if (totalGoals >= 5) 100.0
+            else poissonAtLeast(remainingExpected, 5 - totalGoals) * 100.0
+            val over55 = if (totalGoals >= 6) 100.0
+            else poissonAtLeast(remainingExpected, 6 - totalGoals) * 100.0
+            val expectedFinalGoals = totalGoals + remainingExpected
             val btts = if (currentHome > 0 && currentAway > 0) 100.0
             else (1.0 - Math.exp(-remainingExpected * 0.55)).coerceIn(0.0, 1.0) * 100.0
 
@@ -172,8 +179,12 @@ class MainActivity : AppCompatActivity() {
             }
 
             out.append("\nHESAPLANAN OLASILIKLAR\n")
-            out.append("KG Var: " + String.format("%.0f", btts.coerceIn(0.0, 100.0)) + "%\n")
+            out.append("Tahmini toplam gol: " + String.format("%.1f", expectedFinalGoals) + "\n")
             out.append("2.5 Üst: " + String.format("%.0f", over25.coerceIn(0.0, 100.0)) + "%\n")
+            out.append("3.5 Üst: " + String.format("%.0f", over35.coerceIn(0.0, 100.0)) + "%\n")
+            out.append("4.5 Üst: " + String.format("%.0f", over45.coerceIn(0.0, 100.0)) + "%\n")
+            out.append("5.5 Üst: " + String.format("%.0f", over55.coerceIn(0.0, 100.0)) + "%\n")
+            out.append("KG Var: " + String.format("%.0f", btts.coerceIn(0.0, 100.0)) + "%\n")
             if (elapsed <= 45) {
                 out.append("İY 1.5 Üst: " + String.format("%.0f", firstHalfOver15.coerceIn(0.0, 100.0)) + "%\n")
                 out.append("İY KG Var: " + String.format("%.0f", firstHalfBtts.coerceIn(0.0, 100.0)) + "%\n")
