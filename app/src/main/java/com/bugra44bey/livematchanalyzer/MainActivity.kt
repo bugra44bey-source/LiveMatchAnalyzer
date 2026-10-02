@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
             result.text = "Canlı maçlar yükleniyor..."
             liveList.removeAllViews()
             Thread {
-                val text = getJson("$apiBase/api/live-iddaa")
+                val text = getJson("$apiBase/api/live")
                 runOnUiThread { showFixtureList(text, liveList, result, true) }
             }.start()
         }
