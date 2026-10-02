@@ -9,7 +9,12 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const response = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
+    const mode = req.query?.mode || "live";
+    const endpoint = mode === "today"
+      ? "https://v3.football.api-sports.io/fixtures?date=2026-10-02&timezone=Europe%2FIstanbul"
+      : "https://v3.football.api-sports.io/fixtures?live=all";
+
+    const response = await fetch(endpoint, {
       headers: { "x-apisports-key": key }
     });
     const data = await response.json();
@@ -27,7 +32,7 @@ module.exports = async function handler(req, res) {
     });
   } catch (error) {
     return res.status(500).json({
-      error: "Live fixtures request failed",
+      error: "Fixtures request failed",
       message: error instanceof Error ? error.message : String(error)
     });
   }
