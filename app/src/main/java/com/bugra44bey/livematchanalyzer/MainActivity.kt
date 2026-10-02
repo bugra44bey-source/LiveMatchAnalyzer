@@ -54,14 +54,14 @@ class MainActivity : AppCompatActivity() {
             connection.disconnect()
             body
         } catch (e: Exception) {
-            """{"error":${JSONObject.quote(e.message ?: "Bağlantı hatası")}}"""
+            """{"error":\${JSONObject.quote(e.message ?: "Bağlantı hatası")}}"""
         }
     }
 
     private fun formatLiveMatches(body: String): String {
         return try {
             val root = JSONObject(body)
-            if (root.has("error")) return "Hata: ${root.optString("error")}"
+            if (root.has("error")) return "Hata: \${root.optString("error")}"
             val fixtures = root.optJSONArray("fixtures") ?: return "Canlı maç bulunamadı."
             if (fixtures.length() == 0) return "Şu anda canlı maç bulunamadı."
             val out = StringBuilder("CANLI MAÇLAR\n\n")
@@ -78,20 +78,20 @@ class MainActivity : AppCompatActivity() {
                 val hg = goals?.optInt("home", 0) ?: 0
                 val ag = goals?.optInt("away", 0) ?: 0
                 val minute = status?.optString("elapsed", "") ?: ""
-                out.append("#${id}  ${home} ${hg} - ${ag} ${away}")
-                if (minute.isNotEmpty()) out.append("  (${minute}')")
+                out.append("#\${id}  \${home} \${hg} - \${ag} \${away}")
+                if (minute.isNotEmpty()) out.append("  (\${minute}')")
                 out.append("\n")
             }
             out.toString()
         } catch (e: Exception) {
-            "Canlı maç verisi okunamadı: ${e.message}"
+            "Canlı maç verisi okunamadı: \${e.message}"
         }
     }
 
     private fun formatAnalysis(body: String): String {
         return try {
             val root = JSONObject(body)
-            if (root.has("error")) return "Hata: ${root.optString("error")}"
+            if (root.has("error")) return "Hata: \${root.optString("error")}"
             val predictions = root.optJSONArray("prediction")
             val out = StringBuilder("MAÇ ANALİZİ\n\n")
             if (predictions != null && predictions.length() > 0) {
@@ -100,8 +100,8 @@ class MainActivity : AppCompatActivity() {
                 val goals = pred?.optJSONObject("goals")
                 val advice = pred?.optString("advice", "") ?: ""
                 val underOver = pred?.optString("under_over", "") ?: ""
-                out.append("Tahmin: ${pred?.optString("winner", "—")}\n")
-                out.append("Gol tahmini: ${goals?.optString("home", "—")} - ${goals?.optString("away", "—")}\n")
+                out.append("Tahmin: \${pred?.optString("winner", "—")}\n")
+                out.append("Gol tahmini: \${goals?.optString("home", "—")} - \${goals?.optString("away", "—")}\n")
                 out.append("Alt/Üst: $underOver\n")
                 if (advice.isNotEmpty()) out.append("Öneri: $advice\n")
             } else {
@@ -110,7 +110,7 @@ class MainActivity : AppCompatActivity() {
             out.append("\nNot: KG Var ve 2.5 Üst değerlendirmesi canlı istatistiklerle ayrıca geliştirilecek.")
             out.toString()
         } catch (e: Exception) {
-            "Analiz verisi okunamadı: ${e.message}"
+            "Analiz verisi okunamadı: \${e.message}"
         }
     }
 }
