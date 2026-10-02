@@ -156,9 +156,7 @@ class MainActivity : AppCompatActivity() {
             val predictions = root.optJSONArray("prediction")
             val out = StringBuilder()
             val elapsed = minuteText.toIntOrNull()?.coerceIn(0, 120) ?: 0
-            out.append("⚽ " + homeName + "\n")
-            out.append("      " + currentHome + " - " + currentAway + "\n")
-            out.append("⚽ " + awayName + "\n")
+            out.append("⚽ " + homeName + "  " + currentHome + " - " + currentAway + "  " + awayName + "\n")
             out.append("⏱ " + elapsed + "'\n\n")
             val totalGoals = currentHome + currentAway
 
