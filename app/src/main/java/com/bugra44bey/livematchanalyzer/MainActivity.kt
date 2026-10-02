@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread { showFixtureList(text, liveList, result, true) }
             }.start()
         }
-
+    }
 
     private fun showFixtureList(body: String, liveList: LinearLayout, result: TextView, isLive: Boolean) {
         try {
