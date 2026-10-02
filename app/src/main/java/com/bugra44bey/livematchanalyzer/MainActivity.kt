@@ -2,7 +2,7 @@ package com.bugra44bey.livematchanalyzer
 
 import android.os.Bundle
 import android.widget.Button
-import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
@@ -17,29 +17,63 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val liveMatches = findViewById<Button>(R.id.liveMatches)
-        val fixtureId = findViewById<EditText>(R.id.fixtureId)
-        val analyze = findViewById<Button>(R.id.analyze)
+        val liveList = findViewById<LinearLayout>(R.id.liveList)
         val result = findViewById<TextView>(R.id.result)
 
         liveMatches.setOnClickListener {
             result.text = "Canlı maçlar yükleniyor..."
+            liveList.removeAllViews()
             Thread {
                 val text = getJson("$apiBase/api/live")
-                runOnUiThread { result.text = formatLiveMatches(text) }
+                runOnUiThread { showLiveMatches(text, liveList, result) }
             }.start()
         }
+    }
 
-        analyze.setOnClickListener {
-            val id = fixtureId.text.toString().trim()
-            if (id.isEmpty()) {
-                result.text = "Önce bir Fixture ID gir."
-                return@setOnClickListener
+    private fun showLiveMatches(body: String, liveList: LinearLayout, result: TextView) {
+        try {
+            val root = JSONObject(body)
+            if (root.has("error")) {
+                result.text = "Hata: ${root.optString("error")}"
+                return
             }
-            result.text = "Maç analizi yükleniyor..."
-            Thread {
-                val text = getJson("$apiBase/api/analyze?fixture=$id")
-                runOnUiThread { result.text = formatAnalysis(text) }
-            }.start()
+            val fixtures = root.optJSONArray("fixtures")
+            if (fixtures == null || fixtures.length() == 0) {
+                result.text = "Şu anda canlı maç bulunamadı."
+                return
+            }
+
+            result.text = "Canlı maçlar: ${fixtures.length()}  •  Analiz için maça dokun"
+            val count = minOf(fixtures.length(), 30)
+
+            for (i in 0 until count) {
+                val f = fixtures.optJSONObject(i) ?: continue
+                val fixture = f.optJSONObject("fixture")
+                val teams = f.optJSONObject("teams")
+                val goals = f.optJSONObject("goals")
+                val status = fixture?.optJSONObject("status")
+                val id = fixture?.optInt("id", 0) ?: 0
+                if (id == 0) continue
+
+                val home = teams?.optJSONObject("home")?.optString("name", "?") ?: "?"
+                val away = teams?.optJSONObject("away")?.optString("name", "?") ?: "?"
+                val hg = goals?.optInt("home", 0) ?: 0
+                val ag = goals?.optInt("away", 0) ?: 0
+                val minute = status?.optString("elapsed", "") ?: ""
+
+                val button = Button(this)
+                button.text = "$home $hg - $ag $away${if (minute.isNotEmpty()) "  (${minute}') " else ""}"
+                button.setOnClickListener {
+                    result.text = "$home - $away analiz ediliyor..."
+                    Thread {
+                        val analysis = getJson("$apiBase/api/analyze?fixture=$id")
+                        runOnUiThread { result.text = formatAnalysis(analysis) }
+                    }.start()
+                }
+                liveList.addView(button)
+            }
+        } catch (e: Exception) {
+            result.text = "Canlı maç verisi okunamadı: ${e.message}"
         }
     }
 
@@ -55,36 +89,6 @@ class MainActivity : AppCompatActivity() {
             body
         } catch (e: Exception) {
             """{"error":${JSONObject.quote(e.message ?: "Bağlantı hatası")}}"""
-        }
-    }
-
-    private fun formatLiveMatches(body: String): String {
-        return try {
-            val root = JSONObject(body)
-            if (root.has("error")) return "Hata: ${root.optString("error")}"
-            val fixtures = root.optJSONArray("fixtures") ?: return "Canlı maç bulunamadı."
-            if (fixtures.length() == 0) return "Şu anda canlı maç bulunamadı."
-            val out = StringBuilder("CANLI MAÇLAR\n\n")
-            val count = minOf(fixtures.length(), 30)
-            for (i in 0 until count) {
-                val f = fixtures.optJSONObject(i) ?: continue
-                val fixture = f.optJSONObject("fixture")
-                val teams = f.optJSONObject("teams")
-                val goals = f.optJSONObject("goals")
-                val status = fixture?.optJSONObject("status")
-                val id = fixture?.optInt("id", 0) ?: 0
-                val home = teams?.optJSONObject("home")?.optString("name", "?") ?: "?"
-                val away = teams?.optJSONObject("away")?.optString("name", "?") ?: "?"
-                val hg = goals?.optInt("home", 0) ?: 0
-                val ag = goals?.optInt("away", 0) ?: 0
-                val minute = status?.optString("elapsed", "") ?: ""
-                out.append("#${id}  ${home} ${hg} - ${ag} ${away}")
-                if (minute.isNotEmpty()) out.append("  (${minute}')")
-                out.append("\n")
-            }
-            out.toString()
-        } catch (e: Exception) {
-            "Canlı maç verisi okunamadı: ${e.message}"
         }
     }
 
