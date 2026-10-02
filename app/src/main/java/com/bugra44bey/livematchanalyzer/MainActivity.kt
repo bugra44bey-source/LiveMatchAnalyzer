@@ -23,9 +23,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val liveMatches = findViewById<Button>(R.id.liveMatches)
-        val todayMatches = findViewById<Button>(R.id.todayMatches)
         val liveList = findViewById<LinearLayout>(R.id.liveList)
-        val todayList = findViewById<LinearLayout>(R.id.todayList)
         val result = findViewById<TextView>(R.id.result)
 
         liveMatches.setOnClickListener {
@@ -37,15 +35,6 @@ class MainActivity : AppCompatActivity() {
             }.start()
         }
 
-        todayMatches.setOnClickListener {
-            result.text = "Bugünün maçları yükleniyor..."
-            todayList.removeAllViews()
-            Thread {
-                val text = getJson("$apiBase/api/live?mode=today")
-                runOnUiThread { showFixtureList(text, todayList, result, false) }
-            }.start()
-        }
-    }
 
     private fun showFixtureList(body: String, liveList: LinearLayout, result: TextView, isLive: Boolean) {
         try {
@@ -91,8 +80,6 @@ class MainActivity : AppCompatActivity() {
                 val hg = goals?.optInt("home", 0) ?: 0
                 val ag = goals?.optInt("away", 0) ?: 0
                 val minute = status?.optString("elapsed", "") ?: ""
-                val kickoff = fixture?.optString("date", "") ?: ""
-                val kickoffText = if (kickoff.length >= 16) kickoff.substring(11, 16) else ""
 
                 val button = Button(this)
                 button.isAllCaps = false
@@ -105,7 +92,7 @@ class MainActivity : AppCompatActivity() {
                 val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
                 params.setMargins(0, 0, 0, 10)
                 button.layoutParams = params
-                button.text = if (isLive) home + " " + hg + " - " + ag + " " + away + (if (minute.isNotEmpty()) "  (" + minute + "') " else "") else kickoffText + "  •  " + home + " - " + away
+                button.text = home + "  " + hg + " - " + ag + "  " + away + (if (minute.isNotEmpty()) "  (" + minute + "') " else "")
                 button.setOnClickListener {
                     result.text = "$home - $away analiz ediliyor..."
                     analysisTicker?.let { handler.removeCallbacks(it) }
